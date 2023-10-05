@@ -1,18 +1,8 @@
 import numpy as np
 from scipy.integrate import solve_ivp
+from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
-# Define the parameters:
-a = 1.145
-eps = 1.0
-c = 1.0
-
-# Define the initial conditions:
-initial_state = [-a*3, 0.0, a*1.0, 0.0]
-
-# Define the time span:
-t_span = (0, 500)
 
 def f(xi, xj):
     return c*np.arctan(xi)
@@ -21,70 +11,109 @@ def f(xi, xj):
 def system(t, state):
     x1, y1, x2, y2 = state
     dx1dt = eps * (x1 - (x1**3)/3 - y1 + f(x2, x1))
-    dy1dt = x1 - a
+    dy1dt = x1 + a
     dx2dt = eps * (x2 - (x2**3)/3 - y2 + f(x1, x2))
     dy2dt = x2 + a
     return [dx1dt, dy1dt, dx2dt, dy2dt]
 
+def kuramoto_order_parameter(x_values, y_values):
+    theta_values = np.arctan2(x_values, y_values)
+    z = np.mean(np.exp(1j*theta_values))
+    return np.abs(z)
+
+def system_observables(a, eps, c, inital_state, t_span):
+    sol = solve_ivp(system, t_span, initial_state, method='RK45', max_step=0.05)
+
+    t_values = sol.t
+    x1_values, y1_values, x2_values, y2_values = sol.y
+
+    x_difference = x1_values - x2_values
+    y_difference = y1_values - y2_values
+    norm_difference = np.sqrt(x_difference**2 + y_difference**2)
+    peak_locations = find_peaks(norm_difference)[0]
+    peak_times, peak_values = (t_values[peak_locations], norm_difference[peak_locations])
+    return t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values
 
 
-sol = solve_ivp(system, t_span, initial_state, method='RK45', max_step=0.05)
+if __name__ == '__main__':
 
-t_values = sol.t
-x1_values, y1_values, x2_values, y2_values = sol.y
+    # Define the parameters:
+    a = 0.7
+    eps = 0.01
+    c = 1.0
+    animate = False
+    # Define the initial conditions:
+    initial_state = [-a*3, 0.0, a*1.0, 0.0]
 
-fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(12, 8))
+    # Define the time span:
+    t_span = (0, 5000)
 
-ax1.plot(t_values, x1_values, label='x1(t)')
-ax1.plot(t_values, y1_values, label='y1(t)')
-ax1.plot(t_values, x2_values, label='x2(t)')
-ax1.plot(t_values, y2_values, label='y2(t)')
-ax1.set_xlabel('Time (t)')
-ax1.set_ylabel('Values')
-ax1.set_title('Solution of the 4D System')
-ax1.legend()
-ax1.grid(True)
+    # Solve the system
+    t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values = system_observables(a, eps, c, initial_state, t_span)
 
-ax2.plot(t_values, x1_values - x2_values, label='x difference')
-ax2.plot(t_values, y1_values - y2_values, label='y difference')
-ax2.set_xlabel('Time (t)')
-ax2.set_ylabel('Values')
-ax2.set_title('Difference between the two systems')
-ax2.grid(True)
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, figsize=(12, 8))
 
-fig.tight_layout()
+    ax1.plot(t_values, x1_values, label='x1(t)')
+    ax1.plot(t_values, y1_values, label='y1(t)')
+    ax1.plot(t_values, x2_values, label='x2(t)')
+    ax1.plot(t_values, y2_values, label='y2(t)')
+    ax1.set_xlabel('Time (t)')
+    ax1.set_ylabel('Values')
+    ax1.set_title('Solution of the 4D System')
+    ax1.legend()
+    ax1.grid(True)
 
-# Create the animation figure
-fig_anim, ax_anim = plt.subplots(figsize=(12, 6), nrows=1, ncols=2)
+    ax2.plot(t_values, norm_difference, label='x difference')
+    ax2.set_xlabel('Time (t)')
+    ax2.set_ylabel('Values')
+    ax2.set_title('Norm of the difference between the two systems')
+    ax2.grid(True)
 
-for i, ax in enumerate(ax_anim):
-    ax.set_xlim(min(min(x1_values), min(x2_values)),
-                    max(max(x1_values), max(x2_values)))
-    ax.set_ylim(min(min(y1_values), min(y2_values)),
-                    max( max(y1_values), max(y2_values)))
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_title(f'System {i+1}')
+    ax3.plot(peak_times, peak_values, label='Amplitude of the difference')
+    ax3.set_xlabel('Time (t)')
+    ax3.set_ylabel('Amplitude')
+    ax3.set_title('Amplitude of the difference between the two systems')
+    ax3.grid(True)
 
-# Initialize empty lines for animation
-line1_anim, = ax_anim[0].plot([], [], label='System 1', color='blue')
-line2_anim, = ax_anim[1].plot([], [], label='System 2', color='orange')
-dot1_anim, = ax_anim[0].plot([], [], 'o', color='blue')
-dot2_anim, = ax_anim[1].plot([], [], 'o', color='orange')
+    # x_values = np.array([x1_values, x2_values])
+    # y_values = np.array([y1_values, y2_values])
+    # ax4.plot(t_values, kuramoto_order_parameter(,))
 
-# Function to update the animation frames
+    fig.tight_layout()
 
-skips = 20
-def update(frame):
-    frame = skips*frame
-    line1_anim.set_data(x1_values[:frame], y1_values[:frame])
-    line2_anim.set_data(x2_values[:frame], y2_values[:frame])
-    dot1_anim.set_data(x1_values[frame], y1_values[frame])
-    dot2_anim.set_data(x2_values[frame], y2_values[frame])
-    return line1_anim, line2_anim, dot1_anim, dot2_anim
+    if animate:
+        # Create the animation figure
+        fig_anim, ax_anim = plt.subplots(figsize=(12, 6), nrows=1, ncols=2)
 
-# Create the animation
-ani = FuncAnimation(fig_anim, update, frames=int(len(t_values)/skips), blit=True, interval=1)
+        for i, ax in enumerate(ax_anim):
+            ax.set_xlim(min(min(x1_values), min(x2_values)),
+                            max(max(x1_values), max(x2_values)))
+            ax.set_ylim(min(min(y1_values), min(y2_values)),
+                            max( max(y1_values), max(y2_values)))
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.set_title(f'System {i+1}')
 
-# Show the animation figure
-plt.show()
+        # Initialize empty lines for animation
+        line1_anim, = ax_anim[0].plot([], [], label='System 1', color='blue')
+        line2_anim, = ax_anim[1].plot([], [], label='System 2', color='orange')
+        dot1_anim, = ax_anim[0].plot([], [], 'o', color='blue')
+        dot2_anim, = ax_anim[1].plot([], [], 'o', color='orange')
+
+        # Function to update the animation frames
+
+        skips = 15
+        def update(frame):
+            frame = skips*frame
+            line1_anim.set_data(x1_values[:frame], y1_values[:frame])
+            line2_anim.set_data(x2_values[:frame], y2_values[:frame])
+            dot1_anim.set_data(x1_values[frame], y1_values[frame])
+            dot2_anim.set_data(x2_values[frame], y2_values[frame])
+            return line1_anim, line2_anim, dot1_anim, dot2_anim
+
+        # Create the animation
+        ani = FuncAnimation(fig_anim, update, frames=int(len(t_values)/skips), blit=True, interval=1)
+
+
+    # Show the animation figure
+    plt.show()
