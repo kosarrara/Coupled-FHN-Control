@@ -41,7 +41,7 @@ if __name__ == '__main__':
     a = 0.7
     eps = 0.01
     c = 1.0
-    animate = False
+    animate = True
     # Define the initial conditions:
     initial_state = [-a*3, 0.0, a*1.0, 0.0]
 
