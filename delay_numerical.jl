@@ -1,4 +1,5 @@
 using DifferentialEquations
+using Peaks
 
 function kuramoto_order_parameter(x_values, y_values)
     # theta_values = np.arctan2(x_values, y_values)
@@ -56,10 +57,11 @@ alg = MethodOfSteps(Tsit5())
 sol = solve(prob, alg)
 t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values = observables(sol)
 
+print("System solved. Now plotting...")
+
 using Plots
 l = @layout [a ; b ; c]
 p1 = plot(sol)
-p2 = plot(peak_times, peak_values, xlabel="Time", ylabel="Amplitude of the difference")
-p3 = plot(t_values, norm_difference, xlabel="Time", ylabel="Norm of the difference")
+p2 = plot(peak_times, peak_values, xlabel="Time", ylabel="Amplitude of difference")
+p3 = plot(t_values, norm_difference, xlabel="Time", ylabel="Norm of difference")
 plot(p1, p2, p3, layout=l, size=(800, 600))
-

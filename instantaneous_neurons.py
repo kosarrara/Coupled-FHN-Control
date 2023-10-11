@@ -46,7 +46,7 @@ if __name__ == '__main__':
     initial_state = [-a*3, 0.0, a*1.0, 0.0]
 
     # Define the time span:
-    t_span = (0, 5000)
+    t_span = (0, 1000)
 
     # Solve the system
     t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values = system_observables(a, eps, c, initial_state, t_span)
