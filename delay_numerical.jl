@@ -2,9 +2,6 @@ using DifferentialEquations
 using Peaks
 
 function kuramoto_order_parameter(x_values, y_values)
-    # theta_values = np.arctan2(x_values, y_values)
-    # z = np.mean(np.exp(1j*theta_values))
-    # return np.abs(z)
     z = mean(exp.(im*atan.(y_values, x_values)))
     return abs(z)
 end
@@ -12,6 +9,7 @@ end
 function observables(sol)
     t_values = sol.t
     x1_values, y1_values, x2_values, y2_values = [[],[], [], []]
+
     for coords in sol.u
         push!(x1_values, coords[1])
         push!(y1_values, coords[2])
