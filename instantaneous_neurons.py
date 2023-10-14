@@ -4,25 +4,26 @@ from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-def f(xi, xj):
-    return c*np.arctan(xi)
+def f(xi, xj, c):
+    return c*np.arctan(xi - xj)
     #return c*(xi-xj)
 
-def system(t, state):
+def system(t, state, a1, a2, eps, c):
     x1, y1, x2, y2 = state
-    dx1dt = eps * (x1 - (x1**3)/3 - y1 + f(x2, x1))
-    dy1dt = x1 + a
-    dx2dt = eps * (x2 - (x2**3)/3 - y2 + f(x1, x2))
-    dy2dt = x2 + a
+    dx1dt = eps * (x1 - (x1**3)/3 - y1 + f(x2, x1, c))
+    dy1dt = x1 + a1
+    dx2dt = eps * (x2 - (x2**3)/3 - y2 + f(x1, x2, c))
+    dy2dt = x2 + a2
     return [dx1dt, dy1dt, dx2dt, dy2dt]
 
-def kuramoto_order_parameter(x_values, y_values):
-    theta_values = np.arctan2(x_values, y_values)
-    z = np.mean(np.exp(1j*theta_values))
+def kuramoto_order_parameter(x1_values, y1_values, x2_values, y2_values):
+    theta1_values = np.arctan2(x1_values, y1_values)
+    theta2_values = np.arctan2(x2_values, y2_values)
+    z = (np.exp(1j*theta1_values) + np.exp(1j*theta2_values))/2
     return np.abs(z)
 
-def system_observables(a, eps, c, inital_state, t_span):
-    sol = solve_ivp(system, t_span, initial_state, method='RK45', max_step=0.05)
+def system_observables(a1, a2, eps, c, initial_state, t_span, max_step=0.1):
+    sol = solve_ivp(system, t_span, initial_state, max_step=max_step, args=(a1, a2, eps, c))
 
     t_values = sol.t
     x1_values, y1_values, x2_values, y2_values = sol.y
@@ -38,18 +39,19 @@ def system_observables(a, eps, c, inital_state, t_span):
 if __name__ == '__main__':
 
     # Define the parameters:
-    a = 0.7
+    a1 = 0.7
+    a2 = 0.7
     eps = 0.01
     c = 1.0
-    animate = True
+    animate = False
     # Define the initial conditions:
-    initial_state = [-a*3, 0.0, a*1.0, 0.0]
+    initial_state = [-a1*3, 0.0, a1*1.0, 0.0]
 
     # Define the time span:
     t_span = (0, 1000)
 
     # Solve the system
-    t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values = system_observables(a, eps, c, initial_state, t_span)
+    t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values = system_observables(a1, a2, eps, c, initial_state, t_span)
 
     fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, figsize=(12, 8))
 

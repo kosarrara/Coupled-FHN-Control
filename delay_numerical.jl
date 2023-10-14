@@ -26,7 +26,7 @@ function observables(sol)
     return t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values
 end
 
-function bc_model(du, u, h, p, t)
+function fn_model(du, u, h, p, t)
     a1, a2, c, eps = p
     past_x1 = h(p, t - tau)[1]
     past_x2 = h(p, t - tau)[3]
@@ -37,7 +37,6 @@ function bc_model(du, u, h, p, t)
     du[4] = x2 + a2
 end
 
-h(p, t) = [1.0, 0.0, -1.0, 0.0] # History function. For now, it's just the initial condition.
 tau = 10.0
 lags = [tau]
 
@@ -47,10 +46,11 @@ c = 1.0
 eps = 0.01
 
 p = (a1, a2, c, eps, tau)
-tspan = (0.0, 5000.0)
-u0 = [-a1*3, 0.0, a1*1.0, 0.0]
+tspan = (0.0, 10000.0)
+u0 = [-a1*2, 0.0, a1*0.0, 0.0]
+h(p, t) = u0 # History function. For now, it's just the initial condition.
 
-prob = DDEProblem(bc_model, u0, h, tspan, p; constant_lags = lags, dtmax = 0.1)
+prob = DDEProblem(fn_model, u0, h, tspan, p; constant_lags = lags, dtmax = 0.1)
 alg = MethodOfSteps(Tsit5())
 sol = solve(prob, alg)
 t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values = observables(sol)
@@ -60,6 +60,6 @@ print("System solved. Now plotting...")
 using Plots
 l = @layout [a ; b ; c]
 p1 = plot(sol)
-p2 = plot(peak_times, peak_values, xlabel="Time", ylabel="Amplitude of difference")
-p3 = plot(t_values, norm_difference, xlabel="Time", ylabel="Norm of difference")
+p2 = plot(t_values, norm_difference, xlabel="Time", ylabel="Norm of difference")
+p3 = plot(peak_times, peak_values, xlabel="Time", ylabel="Amplitude of difference")
 plot(p1, p2, p3, layout=l, size=(800, 600))
