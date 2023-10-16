@@ -25,11 +25,17 @@ def kuramoto_order_parameter(x1_values, y1_values, x2_values, y2_values):
 def system_observables(a1, a2, eps, c, initial_state, t_span, max_step=0.1):
     sol = solve_ivp(system, t_span, initial_state, max_step=max_step, args=(a1, a2, eps, c))
 
+    x1_eq = np.array([-a1, a1**3/3 - a1 + f(-a2, -a1, c)])
+    x2_eq = np.array([-a2, a2**3/3 - a2 + f(-a1, -a2, c)])
+
     t_values = sol.t
     x1_values, y1_values, x2_values, y2_values = sol.y
-
-    x_difference = x1_values - x2_values
-    y_difference = y1_values - y2_values
+    x1_from_eq = x1_values - x1_eq[0]
+    y1_from_eq = y1_values - x1_eq[1]
+    x2_from_eq = x2_values - x2_eq[0]
+    y2_from_eq = y2_values - x2_eq[1]
+    x_difference = x1_from_eq - x2_from_eq
+    y_difference = y1_from_eq - y2_from_eq
     norm_difference = np.sqrt(x_difference**2 + y_difference**2)
     peak_locations = find_peaks(norm_difference)[0]
     peak_times, peak_values = (t_values[peak_locations], norm_difference[peak_locations])
@@ -39,16 +45,16 @@ def system_observables(a1, a2, eps, c, initial_state, t_span, max_step=0.1):
 if __name__ == '__main__':
 
     # Define the parameters:
-    a1 = 0.7
-    a2 = 0.7
+    a1 = -0.31
+    a2 = 0.5
     eps = 0.01
     c = 1.0
     animate = False
-    # Define the initial conditions:
+    # Define the initial condition
     initial_state = [-a1*3, 0.0, a1*1.0, 0.0]
 
     # Define the time span:
-    t_span = (0, 1000)
+    t_span = (0, 2000)
 
     # Solve the system
     t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values = system_observables(a1, a2, eps, c, initial_state, t_span)

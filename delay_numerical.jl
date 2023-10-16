@@ -37,7 +37,7 @@ function fn_model(du, u, h, p, t)
     du[4] = x2 + a2
 end
 
-tau = 10.0
+tau = 12.8
 lags = [tau]
 
 a1 = 0.7
