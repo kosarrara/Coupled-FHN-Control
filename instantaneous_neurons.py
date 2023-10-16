@@ -34,32 +34,32 @@ def system_observables(a1, a2, eps, c, initial_state, t_span, max_step=0.1):
     y1_from_eq = y1_values - x1_eq[1]
     x2_from_eq = x2_values - x2_eq[0]
     y2_from_eq = y2_values - x2_eq[1]
+    kuramoto_values = kuramoto_order_parameter(x1_from_eq, y1_from_eq, x2_from_eq, y2_from_eq)
     x_difference = x1_from_eq - x2_from_eq
     y_difference = y1_from_eq - y2_from_eq
     norm_difference = np.sqrt(x_difference**2 + y_difference**2)
     peak_locations = find_peaks(norm_difference)[0]
     peak_times, peak_values = (t_values[peak_locations], norm_difference[peak_locations])
-    return t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values
-
+    return t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values, kuramoto_values
 
 if __name__ == '__main__':
 
     # Define the parameters:
-    a1 = -0.31
-    a2 = 0.5
-    eps = 0.01
+    a1 = 0.619
+    a2 = -0.209
+    eps = 0.1
     c = 1.0
     animate = False
     # Define the initial condition
-    initial_state = [-a1*3, 0.0, a1*1.0, 0.0]
+    initial_state = [-a1*3, 0.0, a2*1.0, 0.0]
 
     # Define the time span:
-    t_span = (0, 2000)
+    t_span = (0, 1000)
 
     # Solve the system
-    t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values = system_observables(a1, a2, eps, c, initial_state, t_span)
+    t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values, kuramoto = system_observables(a1, a2, eps, c, initial_state, t_span)
 
-    fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, figsize=(12, 8))
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(nrows=4, ncols=1, figsize=(12, 8))
 
     ax1.plot(t_values, x1_values, label='x1(t)')
     ax1.plot(t_values, y1_values, label='y1(t)')
@@ -77,12 +77,17 @@ if __name__ == '__main__':
     ax2.set_title('Norm of the difference between the two systems')
     ax2.grid(True)
 
-    ax3.plot(peak_times, peak_values, label='Amplitude of the difference')
+    ax3.plot(peak_times, peak_values, "o-", label='Amplitude of the difference')
     ax3.set_xlabel('Time (t)')
     ax3.set_ylabel('Amplitude')
     ax3.set_title('Amplitude of the difference between the two systems')
     ax3.grid(True)
 
+    ax4.plot(t_values, kuramoto, label='Kuramoto order parameter')
+    ax4.set_xlabel('Time (t)')
+    ax4.set_ylabel('Kuramoto order parameter')
+    ax4.set_title('Kuramoto order parameter')
+    ax4.grid(True)
     # x_values = np.array([x1_values, x2_values])
     # y_values = np.array([y1_values, y2_values])
     # ax4.plot(t_values, kuramoto_order_parameter(,))

@@ -8,11 +8,10 @@ def calculate_phase_diagram_point(params):
     i, j, a1, a2, eps, c = params
     initial_state = [-a1*3, 0.0, a2*1.0, 0.0]
     t_span = (0, 1000)
-    t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values = system_observables(a1, a2, eps, c, initial_state, t_span, max_step=1000)
-    print("working...")
+    t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values, kuramoto = system_observables(a1, a2, eps, c, initial_state, t_span, max_step=1000)
     return i, j, peak_values[-1]/np.max(peak_values)
 
-def main(c=1.0, eps=0.01, a1_range=np.linspace(-1.0, 1.0, 100), a2_range=np.linspace(-1.0, 1.0, 100)):
+def main(c=1.0, eps=0.01, a1_range=np.linspace(-1.0, 1.0, 500), a2_range=np.linspace(-1.0, 1.0, 500)):
 
     # Create a list of parameter values for parallel processing
     params_list = [(i, j, a1, a2, eps, c) for i, a1 in enumerate(a1_range) for j, a2 in enumerate(a2_range)]
@@ -28,8 +27,9 @@ def main(c=1.0, eps=0.01, a1_range=np.linspace(-1.0, 1.0, 100), a2_range=np.lins
     return a1_range, a2_range, phase_diagram
 
 if __name__ == "__main__":
-
-    a1_range, a2_range, phase_diagram = main(c=10.0)
+    c = 1.0
+    eps = 0.1
+    a1_range, a2_range, phase_diagram = main(c=c, eps=eps)
     
     fig, ax = plt.subplots()
     im = ax.pcolormesh(a1_range, a2_range, phase_diagram, shading='auto')
@@ -38,4 +38,5 @@ if __name__ == "__main__":
     ax.set_ylabel('a2')
 
     fig.colorbar(im, ax=ax, label="Final amplitude of the difference")
-    plt.savefig("phase_diagram.png", dpi=600)
+    plt.savefig(f"phase_diagram_c={c}_eps={eps}.png", dpi=600)
+    plt.show()
