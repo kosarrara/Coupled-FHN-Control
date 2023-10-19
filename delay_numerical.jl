@@ -31,26 +31,32 @@ function fn_model(du, u, h, p, t)
     past_x1 = h(p, t - tau)[1]
     past_x2 = h(p, t - tau)[3]
     x1, y1, x2, y2 = u
-    du[1] = eps * (x1 - (x1^3)/3 - y1 + c*atan(past_x2))
+    du[1] = (x1 - (x1^3)/3 - y1 + c*(past_x2 - x1))/eps#atan(past_x2 - x1))/eps
     du[2] = x1 + a1
-    du[3] = eps * (x2 - (x2^3)/3 - y2 + c*atan(past_x1))
+    du[3] = (x2 - (x2^3)/3 - y2 + c*(past_x1 - x2))/eps#atan(past_x1 - x2))/eps
     du[4] = x2 + a2
 end
 
-tau = 12.8
+tau = 3
 lags = [tau]
 
-a1 = 0.7
-a2 = 0.7
+a1 = 1.3
+a2 = 1.3
 c = 1.0
 eps = 0.01
 
 p = (a1, a2, c, eps, tau)
-tspan = (0.0, 10000.0)
-u0 = [-a1*2, 0.0, a1*0.0, 0.0]
-h(p, t) = u0 # History function. For now, it's just the initial condition.
+tspan = (0.0, 100.0)
+u0 = [3, 3, 3, 3]#[-a1*2, 0.0, a1*0.0, 0.0]
+function h(p, t)
+    if t > -0.482
+        return [2, 0, 0, 0] # History function. For now, it's just the initial condition.
+    else
+        return [-a1, 0, 0, 0]
+    end
+end
 
-prob = DDEProblem(fn_model, u0, h, tspan, p; constant_lags = lags, dtmax = 0.1)
+prob = DDEProblem(fn_model, u0, h, tspan, p; constant_lags = lags, dtmax = 0.01)
 alg = MethodOfSteps(Tsit5())
 sol = solve(prob, alg)
 t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values = observables(sol)
@@ -59,7 +65,8 @@ print("System solved. Now plotting...")
 
 using Plots
 l = @layout [a ; b ; c]
-p1 = plot(sol)
+p1 = plot(sol, xlabel="Time", ylabel="System Variables")
 p2 = plot(t_values, norm_difference, xlabel="Time", ylabel="Norm of difference")
 p3 = plot(peak_times, peak_values, xlabel="Time", ylabel="Amplitude of difference")
-plot(p1, p2, p3, layout=l, size=(800, 600))
+p = plot(p1, p2, p3, layout=l, size=(800, 600))
+gui(p)

@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.integrate import solve_ivp
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, hilbert
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
@@ -10,19 +10,19 @@ def f(xi, xj, c):
 
 def system(t, state, a1, a2, eps, c):
     x1, y1, x2, y2 = state
-    dx1dt = eps * (x1 - (x1**3)/3 - y1 + f(x2, x1, c))
+    dx1dt = (x1 - (x1**3)/3 - y1 + f(x2, x1, c))/eps
     dy1dt = x1 + a1
-    dx2dt = eps * (x2 - (x2**3)/3 - y2 + f(x1, x2, c))
+    dx2dt = (x2 - (x2**3)/3 - y2 + f(x1, x2, c))/eps
     dy2dt = x2 + a2
     return [dx1dt, dy1dt, dx2dt, dy2dt]
 
 def kuramoto_order_parameter(x1_values, y1_values, x2_values, y2_values):
-    theta1_values = np.arctan2(x1_values, y1_values)
-    theta2_values = np.arctan2(x2_values, y2_values)
+    theta1_values = np.angle(x1_values + 1j*hilbert(x1_values)) #np.arctan2(x1_values, y1_values)
+    theta2_values = np.angle(x2_values + 1j*hilbert(x2_values)) #np.arctan2(x2_values, y2_values) 
     z = (np.exp(1j*theta1_values) + np.exp(1j*theta2_values))/2
     return np.abs(z)
 
-def system_observables(a1, a2, eps, c, initial_state, t_span, max_step=0.1):
+def system_observables(a1, a2, eps, c, initial_state, t_span, max_step=0.01):
     sol = solve_ivp(system, t_span, initial_state, max_step=max_step, args=(a1, a2, eps, c))
 
     x1_eq = np.array([-a1, a1**3/3 - a1 + f(-a2, -a1, c)])
@@ -45,16 +45,16 @@ def system_observables(a1, a2, eps, c, initial_state, t_span, max_step=0.1):
 if __name__ == '__main__':
 
     # Define the parameters:
-    a1 = 0.619
-    a2 = -0.209
-    eps = 0.1
+    a1 = 0.9
+    a2 = 0.9
+    eps = 0.01
     c = 1.0
-    animate = False
+    animate = True
     # Define the initial condition
     initial_state = [-a1*3, 0.0, a2*1.0, 0.0]
 
     # Define the time span:
-    t_span = (0, 1000)
+    t_span = (0, 100)
 
     # Solve the system
     t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values, kuramoto = system_observables(a1, a2, eps, c, initial_state, t_span)
