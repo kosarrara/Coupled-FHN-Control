@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     # Define the parameters:
     a1 = 0.9
-    a2 = 0.9
+    a2 = 0.91
     eps = 0.01
     c = 1.0
     animate = True
