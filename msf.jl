@@ -2,6 +2,9 @@ using StaticArrays
 using DynamicalSystems
 using OrdinaryDiffEq
 using Plots
+using LaTeXStrings
+using ProgressMeter
+using Base.Threads
 
 function fhn_eom(x, params, t)
     a = params[1]
@@ -20,12 +23,13 @@ function fhn_jac(x, params, t)
     return SMatrix{2,2}(dx_dx, dx_dy, dy_dx, dy_dy)
 end
 
-function msf(xchi, params, t)
+function msf_eom(xchi, params, t)
     aeps = params[1:2]
     alpha = params[3]
     beta = params[4]
     c = params[5] # Coupling strength
-    B = Bmatrix(pi/2, aeps[2])
+    phi = params[6]
+    B = couplingJacobian(phi, aeps[2])
     x = xchi[1:2]
     chireal = xchi[3:4]
     chiimag = xchi[5:6]
@@ -35,16 +39,40 @@ function msf(xchi, params, t)
     return [dxdy; dchireal; dchiimag]
 end
 
-function Bmatrix(phi, eps)
-    return SA[cos(phi)/eps -sin(phi)/eps; sin(phi) cos(phi)] # Revisar si esta es efectivamente B
+function couplingJacobian(phi, eps)
+    return SA[cos(phi)/eps sin(phi)/eps; -sin(phi) cos(phi)]
+#    return SA[1/eps 0; 0 0] # para ver que onda acá (no da negativo cuando debería).
 end
 
-diffeq = (alg=Tsit5(), abstol = 1e-9, reltol = 1e-9)
 # fhn_system = ContinuousDynamicalSystem(fhn_eom, SA[1.3, 0], SA[0.5, 0.1])
-msf_system(alpha, beta) = ContinuousDynamicalSystem(msf, SA[1, 1, 0.0, 0.0, 0.0, 0.0], SA[0.5, 0.01, alpha, beta, -1.0], diffeq=diffeq)
+function msf_system(alpha, beta; a = 0.5, eps=0.01, coupling=1.0, phi=pi/2, diffeq=(alg=Tsit5(), abstol = 1e-9, reltol = 1e-9))
+    ds = ContinuousDynamicalSystem(msf_eom, SA[1.0, 1.0, 0.0, 0.0, 0.0, 0.0], SA[a, eps, alpha, beta, coupling, phi], diffeq=diffeq)
+    return ds
+end
 
-test = msf_system(0.3, 0.3)
-traj, _ = trajectory(test, 100.0; Δt = 0.001)
-λ = lyapunov(test, 200.0; Δt = 0.001, Ttr = 100.0)
-println(λ)
-plot(traj[:, 1], traj[:, 2])
+# test = msf_system(0, 0)
+# traj, _ = trajectory(test, 10.0; Δt = 0.001)
+# inittest_default(D) = (state1, d0) -> [state1[1:2] ; state1[3:end] .- d0/sqrt(D)] # Para que las perturbaciones sean en el espacio de chi y no en el del x sincronizado.
+# λ = lyapunov(test, 2000.0; Δt = 0.01, Ttr = 100.0, inittest = inittest_default(dimension(test)-2))
+
+function master_stability_function(alpha, beta, testfunc; kwargs...)
+    system = msf_system(alpha, beta; kwargs...)
+    return lyapunov(system, 200.0; Δt = 0.01, Ttr = 100.0, inittest=testfunc)
+end
+
+function main()
+    alpha_sweep = range(-5.0, 5.0, length=10)
+    beta_sweep = range(-5.0, 5.0, length=10)
+    msf = zeros(length(alpha_sweep), length(beta_sweep))
+
+    @showprogress for i in 1:length(alpha_sweep)
+        alpha = alpha_sweep[i]
+        Threads.@threads for j in 1:length(beta_sweep)
+            beta = beta_sweep[j]
+            msf[i, j] = master_stability_function(alpha, beta, (state1, d0) -> [state1[1:2] ; state1[3:end] .- d0/sqrt(4)])
+        end
+    end
+    levels = 10#[-1e10, 0, 1,2,3,4,5,6,7, 1e10]
+    p = contour(alpha_sweep, beta_sweep, msf, levels=levels, fill=true, xlabel = L"\alpha", ylabel = L"\beta", zlabel = L"\lambda", lw=0)
+    display(p)
+end
