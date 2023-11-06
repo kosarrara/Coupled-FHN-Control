@@ -47,7 +47,7 @@ eps = 0.01
 crit_x = 0.5
 
 p = (a1, a2, c, eps, tau, crit_x)
-tspan = (0.0, 1000.0)
+tspan = (0.0, 100.0)
 u0 = [2.1, 0, 2.2, 0]#[-a1*2, 0.0, a1*0.0, 0.0]
 
 function h(p, t)
