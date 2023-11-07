@@ -27,15 +27,15 @@ function msf_eom(xchi, params, t)
     aeps = params[1:2]
     alpha = params[3]
     beta = params[4]
-    c = params[5] # Coupling strength
+    c = params[5] 
     phi = params[6]
     B = couplingJacobian(phi, aeps[2])
     x = xchi[1:2]
     chireal = xchi[3:4]
     chiimag = xchi[5:6]
     dxdy = fhn_eom(x, aeps, t)
-    dchireal = fhn_jac(x, aeps, t) * chireal + c*(alpha*B*chireal - beta*B*chiimag)
-    dchiimag = fhn_jac(x, aeps, t) * chiimag + c*(alpha*B*chiimag + beta*B*chireal)
+    dchireal = fhn_jac(x, aeps, t) * chireal - c*(alpha*B*chireal - beta*B*chiimag)
+    dchiimag = fhn_jac(x, aeps, t) * chiimag - c*(alpha*B*chiimag + beta*B*chireal)
     return [dxdy; dchireal; dchiimag]
 end
 
@@ -45,7 +45,7 @@ function couplingJacobian(phi, eps)
 end
 
 # fhn_system = ContinuousDynamicalSystem(fhn_eom, SA[1.3, 0], SA[0.5, 0.1])
-function msf_system(alpha, beta; a = 0.5, eps=0.01, coupling=1.0, phi=pi/2, diffeq=(alg=Tsit5(), abstol = 1e-9, reltol = 1e-9))
+function msf_system(alpha, beta; a=0.5, eps=0.05, coupling=1.0, phi=pi/2 - 0.1, diffeq=(alg=Tsit5(), abstol = 1e-9, reltol = 1e-9))
     ds = ContinuousDynamicalSystem(msf_eom, SA[1.0, 1.0, 0.0, 0.0, 0.0, 0.0], SA[a, eps, alpha, beta, coupling, phi], diffeq=diffeq)
     return ds
 end
@@ -57,22 +57,23 @@ end
 
 function master_stability_function(alpha, beta, testfunc; kwargs...)
     system = msf_system(alpha, beta; kwargs...)
-    return lyapunov(system, 200.0; Δt = 0.01, Ttr = 100.0, inittest=testfunc)
+    return lyapunov(system, 300.0; Δt = 1.0, Ttr = 100.0, inittest=testfunc, show_progress=true)
 end
 
-function main()
-    alpha_sweep = range(-5.0, 5.0, length=10)
-    beta_sweep = range(-5.0, 5.0, length=10)
+function main(n_rows)
+    alpha_sweep = range(-1.5, 1.5, length=n_rows)
+    beta_sweep = range(-1.5, 1.5, length=n_rows)
     msf = zeros(length(alpha_sweep), length(beta_sweep))
 
     @showprogress for i in 1:length(alpha_sweep)
         alpha = alpha_sweep[i]
         Threads.@threads for j in 1:length(beta_sweep)
             beta = beta_sweep[j]
-            msf[i, j] = master_stability_function(alpha, beta, (state1, d0) -> [state1[1:2] ; state1[3:end] .- d0/sqrt(4)])
+            msf[i, j] = master_stability_function(alpha, beta, (state1, d0) -> [state1[1:2] ; state1[3:end] .- d0/sqrt(4)]; coupling=1/12)
         end
     end
-    levels = 10#[-1e10, 0, 1,2,3,4,5,6,7, 1e10]
-    p = contour(alpha_sweep, beta_sweep, msf, levels=levels, fill=true, xlabel = L"\alpha", ylabel = L"\beta", zlabel = L"\lambda", lw=0)
+    levels = [-1e10, 0, 1e10]
+    p = contour(beta_sweep, alpha_sweep, msf, levels=levels, fill=true, xlabel = L"\beta", ylabel = L"\alpha", zlabel = L"\lambda", lw=0, line_smoothing=0.85)
     display(p)
 end
+
