@@ -45,13 +45,13 @@ def system_observables(a1, a2, eps, c, initial_state, t_span, max_step=0.01):
 if __name__ == '__main__':
 
     # Define the parameters:
-    a1 = 0.9
-    a2 = 0.91
+    a1 = 0.91
+    a2 = 0.9
     eps = 0.01
     c = 1.0
     animate = True
     # Define the initial condition
-    initial_state = [-a1*3, 0.0, a2*1.0, 0.0]
+    initial_state = [-a1, 0.0, -a2, 0.0]
 
     # Define the time span:
     t_span = (0, 100)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     # Solve the system
     t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values, kuramoto = system_observables(a1, a2, eps, c, initial_state, t_span)
 
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(nrows=4, ncols=1, figsize=(12, 8))
+    fig, (ax1, ax2, ax4) = plt.subplots(nrows=3, ncols=1, figsize=(12, 8))
 
     ax1.plot(t_values, x1_values, label='x1(t)')
     ax1.plot(t_values, y1_values, label='y1(t)')
@@ -77,16 +77,17 @@ if __name__ == '__main__':
     ax2.set_title('Norm of the difference between the two systems')
     ax2.grid(True)
 
-    ax3.plot(peak_times, peak_values, "o-", label='Amplitude of the difference')
-    ax3.set_xlabel('Time (t)')
-    ax3.set_ylabel('Amplitude')
-    ax3.set_title('Amplitude of the difference between the two systems')
-    ax3.grid(True)
+    # ax3.plot(peak_times, peak_values, "o-", label='Amplitude of the difference')
+    # ax3.set_xlabel('Time (t)')
+    # ax3.set_ylabel('Amplitude')
+    # ax3.set_title('Amplitude of the difference between the two systems')
+    # ax3.grid(True)
 
     ax4.plot(t_values, kuramoto, label='Kuramoto order parameter')
     ax4.set_xlabel('Time (t)')
     ax4.set_ylabel('Kuramoto order parameter')
     ax4.set_title('Kuramoto order parameter')
+    # ax4.set_ylim(-0.1, 1.1)
     ax4.grid(True)
     # x_values = np.array([x1_values, x2_values])
     # y_values = np.array([y1_values, y2_values])

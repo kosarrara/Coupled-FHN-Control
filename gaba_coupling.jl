@@ -38,16 +38,16 @@ function fn_model(du, u, h, p, t)
     du[4] = x2 + a2
 end
 
-tau = 2.5
+tau = 0.01
 lags = [tau]
-a1 = 1.3
-a2 = 1.3
+a1 = 0.9
+a2 = 0.9
 c = 1.0
 eps = 0.01
 crit_x = 0.5
 
 p = (a1, a2, c, eps, tau, crit_x)
-tspan = (0.0, 1000.0)
+tspan = (0.0, 5.0)
 u0 = [2.1, 0, 2.2, 0]#[-a1*2, 0.0, a1*0.0, 0.0]
 
 function h(p, t)
@@ -71,4 +71,4 @@ p1 = plot(sol, xlabel="Time", ylabel="System Variables", labels=[L"$u_1$" L"$v_1
 p2 = plot(t_values, norm_difference, xlabel="Time", ylabel="Norm of difference")
 p3 = plot(peak_times, peak_values, xlabel="Time", ylabel="Amplitude of difference")
 p = plot(p1, p2, p3, layout=l, size=(800, 600))
-gui(p)
+p
