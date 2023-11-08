@@ -1,4 +1,4 @@
-using StaticArrays
+using StaticArrays, LinearAlgebra
 using DynamicalSystems
 using OrdinaryDiffEq
 using Plots, LaTeXStrings
@@ -8,7 +8,6 @@ using Base.Threads
 gr()
 
 # Problemas pendientes:
-
 # 1. El lyapunov parece ser más grande de lo que aparece en el paper. Las
 #    regiones de estabilidad están piola eso si.
 # 2. Todavía no puedo hacer esos gráficos bonitos del paper.
@@ -58,17 +57,17 @@ function couplingJacobian(phi, eps)
     return SA[cos(phi)/eps sin(phi)/eps; -sin(phi) cos(phi)]
 end
 
-function msf_system(alpha, beta; a=0.5, eps=0.05, coupling=1.0, phi=pi/2 - 0.1, diffeq=(alg=Tsit5(), abstol = 1e-9, reltol = 1e-9))
+function msf_system(alpha, beta; a=0.5, eps=0.05, coupling=1.0, phi=(pi/2)-0.1, diffeq=(alg=Tsit5(), abstol = 1e-9, reltol = 1e-9))
     ds = ContinuousDynamicalSystem(msf_eom, SA[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], SA[a, eps, alpha, beta, coupling, phi], diffeq=diffeq)
     return ds
 end
 
-function master_stability_function(alpha, beta, testfunc; kwargs...)
+function master_stability_function(alpha, beta; testfunc=(state1, d0) -> [state1[1:2] ; state1[3:end] .+ d0/sqrt(4)], kwargs...)
     system = msf_system(alpha, beta; kwargs...)
     return lyapunov(system, 100.0; Δt = 0.1, Ttr = 10.0, inittest=testfunc, d0=1e-9)
 end
 
-function main(n_rows)
+function plot_msf_regions(n_rows; kwargs...)
     alpha_sweep = range(-0.5, 1.5, length=n_rows)
     beta_sweep = range(-0.5, 0.5, length=n_rows)
     msf = zeros(length(alpha_sweep), length(beta_sweep))
@@ -77,11 +76,11 @@ function main(n_rows)
         alpha = alpha_sweep[j]
         Threads.@threads for i in 1:length(beta_sweep)
             beta = beta_sweep[i]
-            msf[i, j] = master_stability_function(alpha, beta, (state1, d0) -> [state1[1:2] ; state1[3:end] .+ d0/sqrt(4)]; coupling=1/10) #(state1, d0) -> [state1[1:2] .+ d0/sqrt(4) ; state1[3:end]]; coupling=1/10)
+            msf[i, j] = master_stability_function(alpha, beta; kwargs...)
         end
     end
 
-    levels = [-1e10, -0.5, 0, 0.5, 1e10]
+    levels = [-1e10, 0, 1e10]
 
     p = contour(alpha_sweep, beta_sweep, msf;
                 levels=levels,
@@ -89,8 +88,8 @@ function main(n_rows)
                 xlabel=L"α",
                 ylabel=L"β",
                 zlabel=L"λ",
-                lw=1,
-                line_smoothing=0.85
+                # lw=1,
+                # line_smoothing=0.85,
                 # clabels=true,
                 # cbar=false,
                 # color=:plasma
@@ -98,3 +97,23 @@ function main(n_rows)
     display(p)
 end
 
+function plot_msf_vs_eigs(start, stop, n_points, kwargs...)
+    eigenvalue_real_sweep = range(start, stop, length=n_points)
+    msf_sweep = zeros(length(eigenvalue_real_sweep))
+
+    Threads.@threads for i in 1:length(eigenvalue_real_sweep)
+        msf_sweep[i] = master_stability_function(eigenvalue_real_sweep[i], 0.0; kwargs...)
+    end
+
+    p = plot(eigenvalue_real_sweep, msf_sweep;
+              xlabel="Eigenvalue",
+              ylabel="MSF(Eigenvalue)"
+              )
+    display(p)
+end
+
+function synch_is_stable(coupling_matrix)
+    eigenvalues = eigvals(coupling_matrix)
+    msf_for_eigs = master_stability_function.(real.(eigenvalues), imag.(eigenvalues))
+    return all(msf_for_eigs .< 0)
+end
