@@ -9,3 +9,5 @@ Epilleptic behaviour has been shown to have roots in excessive synchronization o
 #### Notes:
 
 As I read more about the subject, I found incredibly useful works by E. Schöll, a professor at TU Berlin university. This is providing me with a general framework to follow. For now, this also means that the approach will not be too novel, and very much based on the techniques presented in the works by Schöll and their collaborators.
+
+To install the dependencies for Julia, run install_dependencies.jl
