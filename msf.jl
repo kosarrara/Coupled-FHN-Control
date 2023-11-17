@@ -118,7 +118,7 @@ function synch_is_stable(coupling_matrix; kwargs...)
     return all(msf_for_eigs .< 0)
 end
 
-function ring_coupling(size)
+function ring_coupling(size, sigma)
     coupling_matrix = zeros(size, size)
     coupling_matrix[1, end] = 1
     coupling_matrix[end, 1] = 1
@@ -134,5 +134,38 @@ function ring_coupling(size)
         coupling_matrix[i+1, i] = 1
         coupling_matrix[i, i] = correction
     end
-    return coupling_matrix
+    return sigma.*coupling_matrix
+end
+
+function plot_msf_regions_with_eigs(n_rows, coupling_matrix; kwargs...)
+    alpha_sweep = range(-1.5, 1.5, length=n_rows)
+    beta_sweep = range(-1.5, 1.5, length=n_rows)
+    msf = zeros(length(alpha_sweep), length(beta_sweep))
+
+    @showprogress for j in 1:length(alpha_sweep)
+        alpha = alpha_sweep[j]
+        Threads.@threads for i in 1:length(beta_sweep)
+            beta = beta_sweep[i]
+            msf[i, j] = master_stability_function(alpha, beta; kwargs...)
+        end
+    end
+
+    eigs = eigvals(coupling_matrix)
+
+    levels = [-1e10, 0, 1e10]
+
+    p = contour(alpha_sweep, beta_sweep, msf;
+                levels=levels,
+                fill=true,
+                xlabel=L"α",
+                ylabel=L"β",
+                zlabel=L"λ",
+                # lw=1,
+                # line_smoothing=0.85,
+                # clabels=true,
+                # cbar=false,
+                # color=:plasma
+                )
+    plot!(p, real.(eigs), imag.(eigs), seriestype=:scatter, color=:red)
+    display(p)
 end

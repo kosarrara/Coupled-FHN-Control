@@ -4,18 +4,20 @@ from scipy.signal import find_peaks, hilbert
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-def f(xi, xj, c):
-    return c*np.arctan(xi - xj)
-    #return c*(xi-xj)
+def f(x, eps, a):
+    return np.array([(x[0] - (x[0]**3)/3 - x[1])/eps, x[0] + a])
 
-def system(t, state, a1, a2, eps, c):
-    x1, y1, x2, y2 = state
+def Bmatrix(phi, eps, sigma):
+    return sigma*np.array([[np.cos(phi)/eps, np.sin(phi)/eps], [-np.sin(phi), np.cos(phi)]])
+
+def system(t, state, a1, a2, eps, c, sigma):
+    x1 = state[0:2]
+    x2 = state[2:4]
     phi = np.pi/2 - 0.1
-    dx1dt = (x1 - (x1**3)/3 - y1 + c*-0.05*(np.cos(phi)*(x2 - x1) + np.sin(phi)*(y2- y1)))/eps#f(x2, x1, c))/eps
-    dy1dt = x1 + a1 + c*-0.05*(np.cos(phi)*(y2 - y1) - np.sin(phi)*(x2 - x1))
-    dx2dt = (x2 - (x2**3)/3 - y2 + + c*-0.05*(np.cos(phi)*(x1 - x2) + np.sin(phi)*(y1- y2)))/eps #f(x1, x2, c))/eps
-    dy2dt = x2 + a2 + c*-0.05*(np.cos(phi)*(y1 - y2) - np.sin(phi)*(x1 - x2))
-    return [dx1dt, dy1dt, dx2dt, dy2dt]
+    B = Bmatrix(phi, eps, sigma)
+    dx1dt = f(x1, eps, a1) + c * B @ (x2 - x1)
+    dx2dt = f(x2, eps, a2) + c * B @ (x1 - x2)
+    return np.concatenate((dx1dt, dx2dt))
 
 def kuramoto_order_parameter(x1_values, y1_values, x2_values, y2_values):
     theta1_values = np.angle(x1_values + 1j*hilbert(x1_values)) #np.arctan2(x1_values, y1_values)
@@ -23,11 +25,11 @@ def kuramoto_order_parameter(x1_values, y1_values, x2_values, y2_values):
     z = (np.exp(1j*theta1_values) + np.exp(1j*theta2_values))/2
     return np.abs(z)
 
-def system_observables(a1, a2, eps, c, initial_state, t_span, max_step=0.01):
-    sol = solve_ivp(system, t_span, initial_state, max_step=max_step, args=(a1, a2, eps, c))
+def system_observables(a1, a2, eps, c, sigma, initial_state, t_span, max_step=0.01):
+    sol = solve_ivp(system, t_span, initial_state, max_step=max_step, args=(a1, a2, eps, c, sigma))
 
-    x1_eq = np.array([-a1, a1**3/3 - a1 + f(-a2, -a1, c)])
-    x2_eq = np.array([-a2, a2**3/3 - a2 + f(-a1, -a2, c)])
+    x1_eq = np.array([-a1, a1**3/3 - a1]) # + correcciones si a1 \neq a2
+    x2_eq = np.array([-a2, a2**3/3 - a2])
 
     t_values = sol.t
     x1_values, y1_values, x2_values, y2_values = sol.y
@@ -50,15 +52,16 @@ if __name__ == '__main__':
     a2 = 0.5
     eps = 0.05
     c = 1/12
+    sigma = 0.15
     animate = False
     # Define the initial condition
-    initial_state = [0.0 + 1e-9, 0.0, 0.0, 0.0]
+    initial_state = [0.0 + 1e-2, 0.0, 0.0, 0.0]
 
     # Define the time span:
     t_span = (0, 500)
 
     # Solve the system
-    t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values, kuramoto = system_observables(a1, a2, eps, c, initial_state, t_span)
+    t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values, kuramoto = system_observables(a1, a2, eps, c, sigma, initial_state, t_span)
 
     fig, (ax1, ax2, ax4) = plt.subplots(nrows=3, ncols=1, figsize=(12, 8))
 
