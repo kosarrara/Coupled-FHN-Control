@@ -10,10 +10,11 @@ def f(xi, xj, c):
 
 def system(t, state, a1, a2, eps, c):
     x1, y1, x2, y2 = state
-    dx1dt = (x1 - (x1**3)/3 - y1 + f(x2, x1, c))/eps
-    dy1dt = x1 + a1
-    dx2dt = (x2 - (x2**3)/3 - y2 + f(x1, x2, c))/eps
-    dy2dt = x2 + a2
+    phi = np.pi/2 - 0.1
+    dx1dt = (x1 - (x1**3)/3 - y1 + c*-0.05*(np.cos(phi)*(x2 - x1) + np.sin(phi)*(y2- y1)))/eps#f(x2, x1, c))/eps
+    dy1dt = x1 + a1 + c*-0.05*(np.cos(phi)*(y2 - y1) - np.sin(phi)*(x2 - x1))
+    dx2dt = (x2 - (x2**3)/3 - y2 + + c*-0.05*(np.cos(phi)*(x1 - x2) + np.sin(phi)*(y1- y2)))/eps #f(x1, x2, c))/eps
+    dy2dt = x2 + a2 + c*-0.05*(np.cos(phi)*(y1 - y2) - np.sin(phi)*(x1 - x2))
     return [dx1dt, dy1dt, dx2dt, dy2dt]
 
 def kuramoto_order_parameter(x1_values, y1_values, x2_values, y2_values):
@@ -45,16 +46,16 @@ def system_observables(a1, a2, eps, c, initial_state, t_span, max_step=0.01):
 if __name__ == '__main__':
 
     # Define the parameters:
-    a1 = 0.91
-    a2 = 0.9
-    eps = 0.01
-    c = 1.0
-    animate = True
+    a1 = 0.5
+    a2 = 0.5
+    eps = 0.05
+    c = 1/12
+    animate = False
     # Define the initial condition
-    initial_state = [-a1, 0.0, -a2, 0.0]
+    initial_state = [0.0 + 1e-9, 0.0, 0.0, 0.0]
 
     # Define the time span:
-    t_span = (0, 100)
+    t_span = (0, 500)
 
     # Solve the system
     t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values, kuramoto = system_observables(a1, a2, eps, c, initial_state, t_span)

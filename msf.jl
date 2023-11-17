@@ -57,19 +57,19 @@ function couplingJacobian(phi, eps)
     return SA[cos(phi)/eps sin(phi)/eps; -sin(phi) cos(phi)]
 end
 
-function msf_system(alpha, beta; a=0.5, eps=0.05, coupling=1.0, phi=(pi/2)-0.1, diffeq=(alg=Tsit5(), abstol = 1e-9, reltol = 1e-9))
+function msf_system(alpha, beta; a=0.5, eps=0.05, coupling=1.0, phi=(pi/2)-0.1, diffeq=( abstol = 1e-9, reltol = 1e-9))
     ds = ContinuousDynamicalSystem(msf_eom, SA[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], SA[a, eps, alpha, beta, coupling, phi], diffeq=diffeq)
     return ds
 end
 
 function master_stability_function(alpha, beta; testfunc=(state1, d0) -> [state1[1:2] ; state1[3:end] .+ d0/sqrt(4)], kwargs...)
     system = msf_system(alpha, beta; kwargs...)
-    return lyapunov(system, 100.0; Δt = 0.1, Ttr = 10.0, inittest=testfunc, d0=1e-9)
+    return lyapunov(system, 1000.0; Δt = 0.01, Ttr = 100.0, inittest=testfunc, d0=1e-8)
 end
 
 function plot_msf_regions(n_rows; kwargs...)
-    alpha_sweep = range(-0.5, 1.5, length=n_rows)
-    beta_sweep = range(-0.5, 0.5, length=n_rows)
+    alpha_sweep = range(-1.5, 1.5, length=n_rows)
+    beta_sweep = range(-1.5, 1.5, length=n_rows)
     msf = zeros(length(alpha_sweep), length(beta_sweep))
 
     @showprogress for j in 1:length(alpha_sweep)
@@ -97,7 +97,7 @@ function plot_msf_regions(n_rows; kwargs...)
     display(p)
 end
 
-function plot_msf_vs_eigs(start, stop, n_points, kwargs...)
+function plot_msf_vs_eigs(start, stop, n_points; kwargs...)
     eigenvalue_real_sweep = range(start, stop, length=n_points)
     msf_sweep = zeros(length(eigenvalue_real_sweep))
 
@@ -112,8 +112,27 @@ function plot_msf_vs_eigs(start, stop, n_points, kwargs...)
     display(p)
 end
 
-function synch_is_stable(coupling_matrix)
+function synch_is_stable(coupling_matrix; kwargs...)
     eigenvalues = eigvals(coupling_matrix)
-    msf_for_eigs = master_stability_function.(real.(eigenvalues), imag.(eigenvalues))
+    msf_for_eigs = master_stability_function.(real.(eigenvalues), imag.(eigenvalues); kwargs...)
     return all(msf_for_eigs .< 0)
+end
+
+function ring_coupling(size)
+    coupling_matrix = zeros(size, size)
+    coupling_matrix[1, end] = 1
+    coupling_matrix[end, 1] = 1
+    if size > 2
+        correction = -2
+    else
+        correction = -1
+    end
+    coupling_matrix[1, 1] = correction
+    coupling_matrix[end, end] = -1
+    for i in 1:size-1
+        coupling_matrix[i, i+1] = 1
+        coupling_matrix[i+1, i] = 1
+        coupling_matrix[i, i] = correction
+    end
+    return coupling_matrix
 end
