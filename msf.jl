@@ -34,7 +34,7 @@ function fhn_jac(x, params, t)
     dx_dy = -1/eps
     dy_dx = 1
     dy_dy = 0
-    returnable = SMatrix{2,2}(dx_dx dx_dy; dy_dx dy_dy) # Revisar con más detalle
+    returnable = SA_F64[dx_dx dx_dy; dy_dx dy_dy] # Revisar con más detalle
 
     return returnable
 end
@@ -70,7 +70,7 @@ function master_stability_function(alpha, beta; testfunc=(state1, d0) -> [state1
 end
 
 function plot_msf_regions(n_rows; kwargs...)
-    alpha_sweep = range(-1.5, 1.5, length=n_rows)
+    alpha_sweep = range(-0.5, 1.5, length=n_rows)
     beta_sweep = range(-1.5, 1.5, length=n_rows)
     msf = zeros(length(alpha_sweep), length(beta_sweep))
 
@@ -140,8 +140,8 @@ function ring_coupling(size, sigma)
 end
 
 function plot_msf_regions_with_eigs(n_rows, coupling_matrix; kwargs...)
-    alpha_sweep = range(-1.5, 1.5, length=n_rows)
-    beta_sweep = range(-1.5, 1.5, length=n_rows)
+    alpha_sweep = range(-0.5, 1.0, length=n_rows)
+    beta_sweep = range(-0.5, 0.5, length=n_rows)
     msf = zeros(length(alpha_sweep), length(beta_sweep))
 
     @showprogress for j in 1:length(alpha_sweep)
