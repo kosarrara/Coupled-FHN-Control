@@ -120,7 +120,7 @@ function synch_is_stable(coupling_matrix; kwargs...)
     return all(msf_for_eigs .≤ 0)
 end
 
-function ring_coupling(size, sigma)
+function ring_coupling(size; sigma=1)
     coupling_matrix = zeros(size, size)
     coupling_matrix[1, end] = 1
     coupling_matrix[end, 1] = 1
@@ -175,4 +175,12 @@ function plot_msf_regions_with_eigs(n_rows, coupling_matrix; kwargs...)
     else
         println("Synchronization is unstable")
     end
+end
+
+function get_crit_coupling(coupling_matrix)
+    coupling = 0.01
+    while !synch_is_stable(coupling_matrix; coupling=coupling)
+        coupling += 0.01
+    end
+    return coupling - 0.005
 end
