@@ -25,6 +25,11 @@ def kuramoto_order_parameter(x1_values, y1_values, x2_values, y2_values):
     z = (np.exp(1j*theta1_values) + np.exp(1j*theta2_values))/2
     return np.abs(z)
 
+def synchronization_error(x1_values, y1_values, x2_values, y2_values): # Could be made far more elegant and ready for more neurons if I just input sol.y
+    x_mean = (x1_values + x2_values)/2
+    y_mean = (y1_values + y2_values)/2
+    return np.sqrt((x1_values - x_mean)**2 + (y1_values - y_mean)**2 + (x2_values - x_mean)**2 + (y2_values - y_mean)**2)
+
 def system_observables(a1, a2, eps, c, sigma, initial_state, t_span, max_step=0.01):
     sol = solve_ivp(system, t_span, initial_state, max_step=max_step, args=(a1, a2, eps, c, sigma))
 
@@ -38,12 +43,13 @@ def system_observables(a1, a2, eps, c, sigma, initial_state, t_span, max_step=0.
     x2_from_eq = x2_values - x2_eq[0]
     y2_from_eq = y2_values - x2_eq[1]
     kuramoto_values = kuramoto_order_parameter(x1_from_eq, y1_from_eq, x2_from_eq, y2_from_eq)
-    x_difference = x1_from_eq - x2_from_eq
-    y_difference = y1_from_eq - y2_from_eq
-    norm_difference = np.sqrt(x_difference**2 + y_difference**2)
-    peak_locations = find_peaks(norm_difference)[0]
-    peak_times, peak_values = (t_values[peak_locations], norm_difference[peak_locations])
-    return t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values, kuramoto_values
+    # x_difference = x1_from_eq - x2_from_eq
+    # y_difference = y1_from_eq - y2_from_eq
+    # norm_difference = np.sqrt(x_difference**2 + y_difference**2)
+    synch_error = synchronization_error(x1_from_eq, y1_from_eq, x2_from_eq, y2_from_eq)
+    peak_locations = find_peaks(synch_error)[0]
+    peak_times, peak_values = (t_values[peak_locations], synch_error[peak_locations])
+    return t_values, x1_values, y1_values, x2_values, y2_values, synch_error, peak_times, peak_values, kuramoto_values
 
 if __name__ == '__main__':
 
@@ -51,12 +57,14 @@ if __name__ == '__main__':
     a1 = 0.5
     a2 = 0.5
     eps = 0.05
-    c = 1/12
-    sigma = 0.15
+    c = 1/6
+    sigma = 1.3/2
     animate = False
     # Define the initial condition
-    initial_state = [0.0 + 1e-2, 0.0, 0.0, 0.0]
-
+    t_transient = 10
+    pre_initial_state = [0.0, 0.0, 0.0, 0.0]
+    synch_state = solve_ivp(system, (0, t_transient), pre_initial_state, args=(a1, a2, eps, c, sigma)).y[:, -1]
+    initial_state = synch_state + 1e-5*np.random.randn(4)
     # Define the time span:
     t_span = (0, 500)
 

@@ -34,7 +34,9 @@ function fhn_jac(x, params, t)
     dx_dy = -1/eps
     dy_dx = 1
     dy_dy = 0
-    return SMatrix{2,2}(dx_dx, dx_dy, dy_dx, dy_dy)
+    returnable = SMatrix{2,2}(dx_dx dx_dy; dy_dx dy_dy) # Revisar con más detalle
+
+    return returnable
 end
 
 function msf_eom(xchi, params, t)
@@ -57,12 +59,12 @@ function couplingJacobian(phi, eps)
     return SA[cos(phi)/eps sin(phi)/eps; -sin(phi) cos(phi)]
 end
 
-function msf_system(alpha, beta; a=0.5, eps=0.05, coupling=1.0, phi=(pi/2)-0.1, diffeq=( abstol = 1e-9, reltol = 1e-9))
+function msf_system(alpha, beta; a=0.5, eps=0.05, coupling=1.0, phi=(pi/2)-0.1, diffeq=(alg=Tsit5(), abstol = 1e-9, reltol = 1e-9))
     ds = ContinuousDynamicalSystem(msf_eom, SA[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], SA[a, eps, alpha, beta, coupling, phi], diffeq=diffeq)
     return ds
 end
 
-function master_stability_function(alpha, beta; testfunc=(state1, d0) -> [state1[1:2] ; state1[3:end] .+ d0/sqrt(4)], kwargs...)
+function master_stability_function(alpha, beta; testfunc=(state1, d0) -> [state1[1:2] ; state1[3:end] .- d0/sqrt(4)], kwargs...)
     system = msf_system(alpha, beta; kwargs...)
     return lyapunov(system, 1000.0; Δt = 0.01, Ttr = 100.0, inittest=testfunc, d0=1e-8)
 end
@@ -115,7 +117,7 @@ end
 function synch_is_stable(coupling_matrix; kwargs...)
     eigenvalues = eigvals(coupling_matrix)
     msf_for_eigs = master_stability_function.(real.(eigenvalues), imag.(eigenvalues); kwargs...)
-    return all(msf_for_eigs .< 0)
+    return all(msf_for_eigs .≤ 0)
 end
 
 function ring_coupling(size, sigma)
@@ -168,4 +170,9 @@ function plot_msf_regions_with_eigs(n_rows, coupling_matrix; kwargs...)
                 )
     plot!(p, real.(eigs), imag.(eigs), seriestype=:scatter, color=:red)
     display(p)
+    if synch_is_stable(coupling_matrix; kwargs...)
+        println("Synchronization is stable")
+    else
+        println("Synchronization is unstable")
+    end
 end
