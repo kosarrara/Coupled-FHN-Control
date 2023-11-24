@@ -57,8 +57,8 @@ if __name__ == '__main__':
     a1 = 0.5
     a2 = 0.5
     eps = 0.05
-    c = 1/6
-    sigma = 1.3/2
+    c = 1
+    sigma = 0.05
     animate = False
     # Define the initial condition
     t_transient = 10
@@ -66,27 +66,27 @@ if __name__ == '__main__':
     synch_state = solve_ivp(system, (0, t_transient), pre_initial_state, args=(a1, a2, eps, c, sigma)).y[:, -1]
     initial_state = synch_state + 1e-5*np.random.randn(4)
     # Define the time span:
-    t_span = (0, 500)
+    t_span = (0, 50)
 
     # Solve the system
     t_values, x1_values, y1_values, x2_values, y2_values, norm_difference, peak_times, peak_values, kuramoto = system_observables(a1, a2, eps, c, sigma, initial_state, t_span)
 
-    fig, (ax1, ax2, ax4) = plt.subplots(nrows=3, ncols=1, figsize=(12, 8))
+    fig, (ax1, ax2, ax4) = plt.subplots(nrows=3, ncols=1, figsize=(8, 7))
 
-    ax1.plot(t_values, x1_values, label='x1(t)')
-    ax1.plot(t_values, y1_values, label='y1(t)')
-    ax1.plot(t_values, x2_values, label='x2(t)')
-    ax1.plot(t_values, y2_values, label='y2(t)')
-    ax1.set_xlabel('Time (t)')
-    ax1.set_ylabel('Values')
+    ax1.plot(t_values, x1_values, label=r'$u_1(t)$')
+    ax1.plot(t_values, y1_values, label=r'$v_1(t)$')
+    ax1.plot(t_values, x2_values, label=r'$u_2(t)$')
+    ax1.plot(t_values, y2_values, label=r'$v_2(t)$')
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Values of state variables')
     ax1.set_title('Solution of the 4D System')
     ax1.legend()
     ax1.grid(True)
 
     ax2.plot(t_values, norm_difference, label='x difference')
-    ax2.set_xlabel('Time (t)')
+    ax2.set_xlabel('Time')
     ax2.set_ylabel('Values')
-    ax2.set_title('Norm of the difference between the two systems')
+    ax2.set_title('Synchronization error')
     ax2.grid(True)
 
     # ax3.plot(peak_times, peak_values, "o-", label='Amplitude of the difference')
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     # ax3.grid(True)
 
     ax4.plot(t_values, kuramoto, label='Kuramoto order parameter')
-    ax4.set_xlabel('Time (t)')
+    ax4.set_xlabel('Time')
     ax4.set_ylabel('Kuramoto order parameter')
     ax4.set_title('Kuramoto order parameter')
     # ax4.set_ylim(-0.1, 1.1)

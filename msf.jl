@@ -7,19 +7,6 @@ using Base.Threads
 
 gr()
 
-# Problemas pendientes:
-# 1. El lyapunov parece ser más grande de lo que aparece en el paper. Las
-#    regiones de estabilidad están piola eso si.
-# 2. Todavía no puedo hacer esos gráficos bonitos del paper.
-# 3. Hay que saber cómo cambiaría de acuerdo a los parámetros la región de estabilidad.
-#    Preguntarle a Javier.
-
-# Parametros que me falta fijar:
-# 1. El c de acople no sé si está igual que el del paper.
-# 2. El tiempo de cálculo del Lyapunov.
-# 3. El tiempo transitorio de Lyapunov.
-# 4. La perturbación para calcular el Lyapunov.
-
 function fhn_eom(x, params, t)
     a = params[1]
     eps = params[2]
@@ -66,11 +53,11 @@ end
 
 function master_stability_function(alpha, beta; testfunc=(state1, d0) -> [state1[1:2] ; state1[3:end] .- d0/sqrt(4)], kwargs...)
     system = msf_system(alpha, beta; kwargs...)
-    return lyapunov(system, 1000.0; Δt = 0.01, Ttr = 100.0, inittest=testfunc, d0=1e-8)
+    return lyapunov(system, 100.0; Δt = 0.1, Ttr = 100.0, inittest=testfunc, d0=1e-8)
 end
 
 function plot_msf_regions(n_rows; kwargs...)
-    alpha_sweep = range(-0.5, 1.5, length=n_rows)
+    alpha_sweep = range(-1.5, 0.5, length=n_rows)
     beta_sweep = range(-1.5, 1.5, length=n_rows)
     msf = zeros(length(alpha_sweep), length(beta_sweep))
 
@@ -95,6 +82,7 @@ function plot_msf_regions(n_rows; kwargs...)
                 # clabels=true,
                 # cbar=false,
                 # color=:plasma
+                cbar=false
                 )
     display(p)
 end
@@ -120,27 +108,36 @@ function synch_is_stable(coupling_matrix; kwargs...)
     return all(msf_for_eigs .≤ 0)
 end
 
-function ring_coupling(size; sigma=1)
+function ring_coupling(size; sigma=1, neighbors=1)
     coupling_matrix = zeros(size, size)
-    coupling_matrix[1, end] = 1
-    coupling_matrix[end, 1] = 1
-    if size > 2
-        correction = -2
+    # coupling_matrix[1, end] = 1
+    # coupling_matrix[end, 1] = 1    
+    if size > 2*neighbors
+        correction = -2*neighbors
     else
-        correction = -1
+        correction = -size + 1
     end
-    coupling_matrix[1, 1] = correction
-    coupling_matrix[end, end] = -1
-    for i in 1:size-1
-        coupling_matrix[i, i+1] = 1
-        coupling_matrix[i+1, i] = 1
-        coupling_matrix[i, i] = correction
+    # coupling_matrix[1, 1] = correction
+    # coupling_matrix[end, end] = -1
+    for i in 1:size
+        if i + neighbors ≤ size
+            coupling_matrix[i, i .+ (1:neighbors)] .+= 1
+            coupling_matrix[i .+ (1:neighbors), i] .+= 1
+            coupling_matrix[i, i] = correction
+        else
+            wrap = i+neighbors - size
+            coupling_matrix[i, i+1:end] .+= 1
+            coupling_matrix[i, 1:wrap] .+= 1
+            coupling_matrix[i+1:end, i] .+= 1
+            coupling_matrix[1:wrap, i] .+= 1
+            coupling_matrix[i, i] = correction
+        end
     end
     return sigma.*coupling_matrix
 end
 
-function plot_msf_regions_with_eigs(n_rows, coupling_matrix; kwargs...)
-    alpha_sweep = range(-0.5, 1.0, length=n_rows)
+function plot_msf_regions_with_eigs(n_rows, coupling_matrix; savefigure=false, kwargs...)
+    alpha_sweep = range(-1.5, 0.5, length=n_rows)
     beta_sweep = range(-0.5, 0.5, length=n_rows)
     msf = zeros(length(alpha_sweep), length(beta_sweep))
 
@@ -153,7 +150,7 @@ function plot_msf_regions_with_eigs(n_rows, coupling_matrix; kwargs...)
     end
 
     eigs = eigvals(coupling_matrix)
-
+    msf_for_eigs = master_stability_function.(real.(eigs), imag.(eigs); kwargs...)
     levels = [-1e10, 0, 1e10]
 
     p = contour(alpha_sweep, beta_sweep, msf;
@@ -167,13 +164,22 @@ function plot_msf_regions_with_eigs(n_rows, coupling_matrix; kwargs...)
                 # clabels=true,
                 # cbar=false,
                 # color=:plasma
+                cbar=false,
+                xlims=(-1.5, 0.5),
+                ylims=(-0.5, 0.5)
                 )
-    plot!(p, real.(eigs), imag.(eigs), seriestype=:scatter, color=:red)
+    plot!(p, real.(eigs), imag.(eigs), seriestype=:scatter, color=:red, label="Eigenvalues", dpi=400, aspect_ratio=2)
+
+    if savefigure
+        savefig(p, "msf_with_eigs.png")
+    end
     display(p)
-    if synch_is_stable(coupling_matrix; kwargs...)
+    if all(msf_for_eigs .≤ 0)
         println("Synchronization is stable")
+        println("Max Lyapunov: ", maximum(msf_for_eigs))
     else
         println("Synchronization is unstable")
+        println("Max Lyapunov: ", maximum(msf_for_eigs))
     end
 end
 
