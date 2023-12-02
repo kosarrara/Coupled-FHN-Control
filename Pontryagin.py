@@ -42,51 +42,32 @@ def BangBangCustom(minimo: float, maximo: float):
         return valor
     return BangBang
 
-def CrearHamiltoniano(A, B, epsilon, a):
+def crear_dinamica_x(A, B, a, epsilon):
     """
-        Esta función crea un Hamiltoniano en base a una matriz de interacciones A de tamaño N\\
-        Y una matriz de acoplamiento cruzado B, que será de tamaño 2x2. Asi como un factor de tiempo\\
-        epsilon, y uno de inhibición a\\
-        Este Hamiltoniano tomará como parámetros x, p y C, donde X y P son vectores\\
-        de tamaño 2N respectivamente. Las primeras N coordenadas serán relativas\\
-        A la variable excitativa, y las siguientes N serán relativas a las inhibitorias\\
-        ####################################################\\
-        Inputs:\\
-        A: Matriz cuadrada de tamaño NxN\\
-        B: Matriz cuadrada de rotacion de tamaño 2x2
-        ####################################################\\
-        Outputs:\\
-        Hamiltoniano: Funcion que toma un vector de estado, un vector adjunto y un control 1D\\
+        Dada una matriz de interaccion A, una matriz de interaccion cruzada B\\
+        Y un parametro de inhibicion a, crea la funcion derivada de x.\\
     """
     tamano = np.shape(A)[0]
-    def Hamiltoniano(x,p,C):
+    def dinamica(t, x, C):
         """
-            Hamiltoniano del sistema
+            Crea una dinamica para el vector x, que es un vector de tamaño 2*tamano\\
+            COMPLETAR ESTE DOCSTRING
         """
-        densidad_lagrangiana = 0
-        for j in range(tamano):
-            for k in range(tamano):
-                dif = x[j] - x[k]
-                densidad_lagrangiana += 0.5 * dif ** 2
-        termino_u = 0
+        din = np.zeros(2*tamano)
         for k in range(tamano):
-            suma_parcial = (1/epsilon) * (x[k] - 1/3 * x[k] ** 3 - x[tamano+k])
-            parcial = 0
+            din_u = x[k] - 1/3 * x[k] ** 3 - x[tamano+k]
+            inter_u = 0
             for j in range(tamano):
-                val_extra = A[k,j] * (B[0,0] * (x[j] - x[k]) + B[0,1] * (x[tamano+j] - x[tamano+k]))
-                parcial += val_extra
-            parcial *= C/epsilon
-            suma_parcial += parcial
-            termino_u += suma_parcial * p[k]
-        termino_v = 0
-        for k in range(tamano):
-            suma_parcial = x[k] + a
+                inter_u += A[k,j] * (B[0,0] * (x[j] - x[k]) + B[0,1] * (x[tamano+j] - x[tamano+k]))
+            inter_u *= C
+            din_u += inter_u
+            din_u *= 1/epsilon
+            din[k] = din_u
+            din_v = x[k] + a
+            inter_v = 0
             for j in range(tamano):
-                val = C * A[k,j] * (B[1,0]*(x[j]-x[k]) + B[1,1] * (x[tamano+j] - x[tamano+k]))
-                suma_parcial += val
-            suma_parcial *= p[tamano+k]
-            termino_v += suma_parcial
-        H = densidad_lagrangiana + termino_u + termino_v
-        return H
-    return Hamiltoniano
-            
+                inter_v += A[k,j] * (B[1,0] * (x[j]- x[k]) + B[1,1] * (x[tamano+j]-x[tamano+k]))
+            din_v += C * inter_v
+            din[tamano+k] = din_v
+        return din
+    return dinamica
