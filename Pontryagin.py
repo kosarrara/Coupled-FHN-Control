@@ -196,3 +196,28 @@ def crearDominioControl(A,B,epsilon,a):
                 val += A[k,j] * (dif_u * acomp_u +dif_v * acomp_v)
         return val
     return entrada
+
+def crearDinamicaTotal(A, B, epsilon, a, mini, maxi):
+    """
+        Junta las dinamicas de x y p para llevar al final al solver\\
+        Esto crea la función que se debe aplicar al final allí.
+    """
+    N = np.shape(A)[0]
+    def derivada(t,y):
+        """
+            Derivada total del sistema
+        """
+        x = y[:2*N]
+        p = y[2*N:4*N]
+        resultado = np.zeros(4*N)
+        der_x = crearDinamica_x(A, B, epsilon, a)
+        der_p = crearDinamica_p(A, B, epsilon, a)
+        control = crearDominioControl(A, B, epsilon, a)
+        input_control = control(t,x,p)
+        res_control = BangBangCustom(mini, maxi)(input_control)
+        der_x_eval = der_x(x,res_control)
+        der_p_eval = der_p(x,p,res_control)
+        resultado[:2*N] = der_x_eval
+        resultado[2*N:4*N] =der_p_eval
+        return resultado
+    return derivada
