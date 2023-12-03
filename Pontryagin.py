@@ -63,7 +63,18 @@ def crearDinamica_x(A,B,epsilon,a):
     N = np.shape(A)[0]
     def dinamica(x,C):
         """
-            Dinamica del vector de estado\\
+            Dinamica del vector de estado, esto es, de las variables u y v\\
+            Del problema original, codificados en el vector x del dominio\\
+            Considerando además un control C en esta misma función\\
+            ####################################################\\
+            Inputs:\\
+            x: ndarray, vector de tamano 2N. Con coordenadas representando:\\
+                x[:N]: Vector u\\
+                x[N:2N]: Vector v\\
+            C: float, es el control que determina interaccion con resto de neuronas\\
+            ####################################################\\
+            Outputs:\\
+            salida: Vector de tamano 2N, con la derivada temporal de x del input
         """
         salida = np.zeros(2*N)
         for k in range(N):
@@ -89,12 +100,41 @@ def crearDinamica_x(A,B,epsilon,a):
 
 def crearDinamica_p(A, B, epsilon, a):
     """
-        Crea función de dinamica de p
+        Crea función de dinamica de p, determinado por matriz de interaccion A\\
+        y matriz de interaccion cruzada B, ademas de un parametro de escala temporal\\
+        epsilon y la propia regulacion de cada neurona, codificada en el parametro a\\
+        Esta dinamica viene determinada por el principio de Maximo de Pontryagin.\\
+        ####################################################\\
+        Inputs:\\
+        A: ndarray, matriz de tamano NxN, es la matriz de interaccion\\
+        B: ndarray, matriz de 2x2, es la matriz de acoplamiento cruzado\\
+        epsilon: float, es escala temporal de evolucion de u\\
+        a: float, es un parametro que determina la regulacion de la neurona aislada\\
+        ####################################################\\
+        Outputs:\\
+        dinamica: Funcion que toma como entrada\\
+            x: Vector de estado de tamano 2n, con las primeras n siendo u,\\
+               las segundas n siendo v\\
+            p: Vectores adjuntos de vector x\\
+            C: Control, es un float\\
+            y tiene como salida f(x,p,C), que es un vector de tamano 2*N y es la derivada de p\\
     """
     N = np.shape(A)[0]
     def dinamica(x,p,C):
         """
-            Dinamica de p
+            Dinamica del vector adjunto, esto es, de las variables pu y pv\\
+            Del problema original, codificados en el vector p del dominio\\
+            Considerando además un control C en esta misma función\\
+            ####################################################\\
+            Inputs:\\
+            x: ndarray, vector de tamano 2N. Con coordenadas representando:\\
+                x[:N]: Vector u\\
+                x[N:2N]: Vector v\\
+            p: ndarray, vector adjunto de x, con correspondencia analoga a x\\
+            C: float, es el control que determina interaccion con resto de neuronas\\
+            ####################################################\\
+            Outputs:\\
+            salida: Vector de tamano 2N, con la derivada temporal de p del input
         """
         der_p = np.zeros(2*N)
         for i in range(N):
@@ -124,3 +164,35 @@ def crearDinamica_p(A, B, epsilon, a):
             der_p[N+i] = (-1) * final_v
         return der_p
     return dinamica
+
+def crearDominioControl(A,B,epsilon,a):
+    """
+        Crea funcion que determinara control, aprovechando que sabemos que el control es de\\
+        tipo bang bang. Para esto se le da a la funcion la matriz de interaccion A y\\
+        un acoplamiento cruzado B, ademas de una escala temporal epsilon y un escalar que\\
+        determina la interaccion interna de cada neurona para regular su dinamica\\
+        ####################################################\\
+        Inputs:\\
+        A: ndarray, matriz de tamano NxN, es la matriz de interaccion\\
+        B: ndarray, matriz de 2x2, es la matriz de acoplamiento cruzado\\
+        epsilon: float, es escala temporal de evolucion de u\\
+        a: float, es un parametro que determina la regulacion de la neurona aislada\\
+        ####################################################\\
+        Outputs:\\
+        entrada: Funcion que da la entrada del control tipo bang bang.
+    """
+    N = np.shape(A)[0]
+    def entrada(t,x,p):
+        """
+            Entrada de funcion que determinara valor del control
+        """
+        val = 0
+        for k in range(N):
+            for j in range(N):
+                dif_u = x[j] - x[k]
+                dif_v = x[N+j] - x[N+k]
+                acomp_u = (B[0,0] * p[k] / epsilon) + p[N+k] * B[1,0]
+                acomp_v = (B[0,1] * p[k] / epsilon) + p[N+k] * B[1,1]
+                val += A[k,j] * (dif_u * acomp_u +dif_v * acomp_v)
+        return val
+    return entrada
