@@ -194,7 +194,7 @@ def crearDominioControl(A,B,epsilon,a):
                 acomp_u = (B[0,0] * p[k] / epsilon) + p[N+k] * B[1,0]
                 acomp_v = (B[0,1] * p[k] / epsilon) + p[N+k] * B[1,1]
                 val += A[k,j] * (dif_u * acomp_u +dif_v * acomp_v)
-        return val
+        return (-1)*val
     return entrada
 
 def crearDinamicaTotal(A, B, epsilon, a, mini, maxi):
