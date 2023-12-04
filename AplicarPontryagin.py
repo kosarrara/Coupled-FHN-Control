@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from scipy.optimize import minimize
+from time import time
 
 def ring_coupling(size, neighbors=1):
     coupling_matrix = np.zeros((size, size))
@@ -43,19 +44,19 @@ def wattsstrogatzmatrix(size, neighbors, rewiring_prob):
     return coupling_matrix
 
 
-N = 2
+N = 3
 vec = 1
 prob_conec = 0.5
 
 A = wattsstrogatzmatrix(N,vec, prob_conec)
 # A = ring_coupling(N, vec)
-phi = np.pi/2
+phi = np.pi/2-0.001
 B = np.array([[np.cos(phi), np.sin(phi)], [-np.sin(phi), np.cos(phi)]])
-eps = 0.1
-a = 0.005
+eps = 0.01
+a = 0.5
 tf = 15
 
-cs = 1000
+cs = 1
 
 mini = -cs
 maxi = cs
@@ -104,8 +105,12 @@ def minimizar_shooting(p):
     return np.linalg.norm(p_fin) ** 2
 
 p_random = np.random.rand(2*N)
+print("El primer intento sera con ",p_random)
 
+ti = time()
 fin = minimize(minimizar_shooting, p_random)
+tfinal = time()
+print("Minimize se demoro ",tfinal-ti,"(s)")
 p_optimo_estado = fin.success
 p_optimo = fin.x
 print(p_optimo_estado)
@@ -125,7 +130,7 @@ control_apic = rec(tiempos)
 
 fig, ax = plt.subplots(1,3, figsize=(15,5))
 
-ax[0].plot(tiempos, control_apic)
+ax[0].plot(tiempos, control_apic,".")
 ax[0].set_title("Control")
 
 respuestas = test.sol(tiempos)
