@@ -143,24 +143,20 @@ def crearDinamica_p(A, B, epsilon, a):
             pvi = p[N+i]
             sum_nada = (1/epsilon) * pui * (1 - ui ** 2)
             sum_control = 0
-            sum_u1 = 0
-            sum_u2 = 0
-            sum_v1 = 0
-            sum_v2 = 0
+            suma_mezclada = 0
+            suma_matriz = 0
             for j in range(N):
                 uj = x[j]
                 puj = p[j]
                 pvj = p[N+j]
                 sum_control += ui - uj
-                sum_u1 += puj * A[j,i]
-                sum_u2 += A[i,j]
-                sum_v1 += pvj * A[j,i]
-                sum_v2 += A[i,j]
-            final = 2 * sum_control + sum_nada + C*B[0,0]/epsilon * (sum_u1 - pui * sum_u2)\
-                    + pvi + C*B[1,0] * (sum_v1 - pvi * sum_v2)
+                suma_mezclada += puj * A[j,i]
+                suma_matriz += A[i,j]
+            final = 2 * sum_control + sum_nada + C*B[0,0]/epsilon * (suma_mezclada - pui * suma_matriz)\
+                    + pvi + C*B[1,0] * (suma_mezclada - pvi * suma_matriz)
             der_p[i] = (-1) * final
-            final_v = - pui / epsilon + (C * B[0,1] / epsilon) * (sum_u1 - pui * sum_u2)\
-                      + C * B[1,1] * (sum_v1 - pvi * sum_v2)
+            final_v = - pui / epsilon + (C * B[0,1] / epsilon) * (suma_mezclada - pui * suma_matriz)\
+                      + C * B[1,1] * (suma_mezclada - pvi * suma_matriz)
             der_p[N+i] = (-1) * final_v
         return der_p
     return dinamica
