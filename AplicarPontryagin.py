@@ -52,10 +52,10 @@ A = wattsstrogatzmatrix(N,vec, prob_conec)
 phi = np.pi/2
 B = np.array([[np.cos(phi), np.sin(phi)], [-np.sin(phi), np.cos(phi)]])
 eps = 0.1
-a = 0.05
+a = 0.005
 tf = 15
 
-cs = 0.1
+cs = 1000
 
 mini = -cs
 maxi = cs
