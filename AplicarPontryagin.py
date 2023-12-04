@@ -101,7 +101,7 @@ def minimizar_shooting(p):
     """
     solucion = cond_ini(x_0, p)
     p_fin = solucion.sol(tf)[2*N:4*N]
-    return np.linalg.norm(p_fin)
+    return np.linalg.norm(p_fin) ** 2
 
 p_random = np.random.rand(2*N)
 
